@@ -6,11 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { FileTextIcon, CarIcon, SearchIcon, FilterIcon } from "lucide-react";
+import { SearchIcon, FilterIcon } from "lucide-react";
 import { format } from "date-fns";
 import { getCars, getInvoice } from '../helpers/data.helper';
 import { InvoiceInterface } from '../interfaces/invoice.interface';
 import { CarInterface } from '../interfaces/car.interface';
+import Sidebar from './Sidebar/Sidebar';
 
 
 export default function Dashboard() {
@@ -22,21 +23,21 @@ export default function Dashboard() {
     getCars(setCarRentRequests);
   }, []);
 
-  const [activeTab, setActiveTab] = useState('invoices');
+  const [activeTab, setActiveTab] = useState<string>('invoices');
   const [invoiceFilters, setInvoiceFilters] = useState({
     search: '',
     dateCreated: null as Date | null,
     datePaid: null as Date | null,
-    status: 'all',
-    type: '',
-    supplier: '',
+    status: 'All',
+    type: 'All',
+    supplier: 'All',
     minSum: '',
     maxSum: '',
-    refer: ''
+    refer: 'All'
   });
   const [carFilters, setCarFilters] = useState({
     search: '',
-    status: 'all',
+    status: 'All',
     pax: '',
     model: '',
     dateStart: null as Date | null,
@@ -45,25 +46,35 @@ export default function Dashboard() {
     maxRentalDays: '',
     location: '',
     pickUpPlace: '',
-    supplier: '',
-    carGroup: '',
+    supplier: 'All',
+    carGroup: 'All',
     insurance: 'all',
-    carCategory: '',
+    carCategory: 'All',
     clarification: ''
   });
+
+  const uniqueInvoiceStatuses = useMemo(() => ['All', ...Array.from(new Set(invoices.map(invoice => invoice.status)))], [invoices]);
+  const uniqueInvoiceTypes = useMemo(() => ['All', ...Array.from(new Set(invoices.map(invoice => invoice.type)))], [invoices]);
+  const uniqueInvoiceSuppliers = useMemo(() => ['All', ...Array.from(new Set(invoices.map(invoice => invoice.supplier)))], [invoices]);
+  const uniqueInvoiceRefs = useMemo(() => ['All', ...Array.from(new Set(invoices.map(invoice => invoice.refer)))], [invoices]);
+
+  const uniqueCarStatuses = useMemo(() => ['All', ...Array.from(new Set(carRentRequests.map(request => request.status)))], [carRentRequests]);
+  const uniqueCarSuppliers = useMemo(() => ['All', ...Array.from(new Set(carRentRequests.map(request => request.requestDetail.supplier)))], [carRentRequests]);
+  const uniqueCarGroups = useMemo(() => ['All', ...Array.from(new Set(carRentRequests.map(request => request.requestDetail.car_group)))], [carRentRequests]);
+  const uniqueCarCategories = useMemo(() => ['All', ...Array.from(new Set(carRentRequests.map(request => request.requestDetail.car_category)))], [carRentRequests]);
 
   const filteredInvoices = useMemo(() => {
     return invoices.filter(invoice => {
       const searchMatch = invoice.id.toLowerCase().includes(invoiceFilters.search.toLowerCase());
       const dateCreatedMatch = !invoiceFilters.dateCreated || invoice.dateCreated === format(invoiceFilters.dateCreated, 'yyyy-MM-dd');
       const datePaidMatch = !invoiceFilters.datePaid || invoice.datePaid === format(invoiceFilters.datePaid, 'yyyy-MM-dd');
-      const statusMatch = invoiceFilters.status === 'all' || invoice.status === invoiceFilters.status;
-      const typeMatch = !invoiceFilters.type || invoice.type === invoiceFilters.type;
-      const supplierMatch = !invoiceFilters.supplier || invoice.supplier.toLowerCase().includes(invoiceFilters.supplier.toLowerCase());
+      const statusMatch = invoiceFilters.status === 'All' || invoice.status === invoiceFilters.status;
+      const typeMatch = invoiceFilters.type === 'All' || invoice.type === invoiceFilters.type;
+      const supplierMatch = invoiceFilters.supplier === 'All' || invoice.supplier.toLowerCase().includes(invoiceFilters.supplier.toLowerCase());
       const sumMatch = 
         (!invoiceFilters.minSum || invoice.sum >= parseFloat(invoiceFilters.minSum)) &&
         (!invoiceFilters.maxSum || invoice.sum <= parseFloat(invoiceFilters.maxSum));
-      const referMatch = !invoiceFilters.refer || invoice.refer.toLowerCase().includes(invoiceFilters.refer.toLowerCase());
+      const referMatch = invoiceFilters.refer === 'All' || invoice.refer.toLowerCase().includes(invoiceFilters.refer.toLowerCase());
       
       return searchMatch && dateCreatedMatch && datePaidMatch && statusMatch && typeMatch && supplierMatch && sumMatch && referMatch;
     });
@@ -74,7 +85,7 @@ export default function Dashboard() {
       const searchMatch = 
         request.id.toLowerCase().includes(carFilters.search.toLowerCase()) ||
         request.supplierName.toLowerCase().includes(carFilters.search.toLowerCase());
-      const statusMatch = carFilters.status === 'all' || request.status === carFilters.status;
+      const statusMatch = carFilters.status === 'All' || request.status === carFilters.status;
       const paxMatch = !carFilters.pax || request.requestDetail.pax.includes(carFilters.pax);
       const modelMatch = !carFilters.model || request.requestDetail.model.toLowerCase().includes(carFilters.model.toLowerCase());
       const dateStartMatch = !carFilters.dateStart || (new Date(request.requestDetail.date_start) >= new Date(carFilters.dateStart as Date));
@@ -84,10 +95,10 @@ export default function Dashboard() {
         (!carFilters.maxRentalDays || request.requestDetail.rental_days <= parseInt(carFilters.maxRentalDays));
       const locationMatch = !carFilters.location || request.requestDetail.location.toLowerCase().includes(carFilters.location.toLowerCase());
       const pickUpPlaceMatch = !carFilters.pickUpPlace || request.requestDetail.pick_up_place.toLowerCase().includes(carFilters.pickUpPlace.toLowerCase());
-      const supplierMatch = !carFilters.supplier || request.requestDetail.supplier === carFilters.supplier;
-      const carGroupMatch = !carFilters.carGroup || request.requestDetail.car_group === carFilters.carGroup;
+      const supplierMatch = carFilters.supplier === 'All' || request.requestDetail.supplier === carFilters.supplier;
+      const carGroupMatch = carFilters.carGroup === 'All' || request.requestDetail.car_group === carFilters.carGroup;
       const insuranceMatch = carFilters.insurance === 'all' || (carFilters.insurance === 'yes' && request.requestDetail.insurance) || (carFilters.insurance === 'no' && !request.requestDetail.insurance);
-      const carCategoryMatch = !carFilters.carCategory || request.requestDetail.car_category === carFilters.carCategory;
+      const carCategoryMatch = carFilters.carCategory === 'All' || request.requestDetail.car_category === carFilters.carCategory;
       const clarificationMatch = !carFilters.clarification || request.clarificationText.toLowerCase().includes(carFilters.clarification.toLowerCase());
       
       return searchMatch && statusMatch && paxMatch && modelMatch && dateStartMatch && dateEndMatch && 
@@ -104,31 +115,25 @@ export default function Dashboard() {
     setCarFilters(prev => ({ ...prev, [key]: value }));
   };
 
+  const getStatusColor = (status: string) => {
+    if (status.toLowerCase() === 'paid') {
+      return 'text-green-600';
+    } else if (status.toLowerCase() === 'cancelled') {
+      return 'text-red-600';
+    } else {
+      return 'text-gray-600';
+    }
+  };
+
+  const invoiceFiltersTitle: string[] = ['Invoice ID', 'Date Created', 'Date Paid', 'Status', 'Type', 'Supplier',
+    'Sum', 'Refer', 'Invoice Data'];
+
+  const carFiltersTitle: string[] = ['ID', 'Name', 'Status', 'Pax', 'Model', 'Start Date', 'End Date', 'Rental Days',
+    'Location', 'Pick Up Place', 'Supplier', 'Car Group', 'Insurance', 'Car Category', 'Clarification'];
+
   return (
     <div className="flex h-screen bg-gray-100">
-      {/* Sidebar */}
-      <div className="w-16 bg-white shadow-md">
-        <div className="flex flex-col items-center py-4">
-          <Button
-            variant={activeTab === 'invoices' ? 'default' : 'ghost'}
-            size="icon"
-            onClick={() => setActiveTab('invoices')}
-            className="mb-4"
-          >
-            <FileTextIcon className="h-6 w-6" />
-            <span className="sr-only">Invoices</span>
-          </Button>
-          <Button
-            variant={activeTab === 'cars' ? 'default' : 'ghost'}
-            size="icon"
-            onClick={() => setActiveTab('cars')}
-          >
-            <CarIcon className="h-6 w-6" />
-            <span className="sr-only">Cars</span>
-          </Button>
-        </div>
-      </div>
-
+      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
       {/* Main content */}
       <div className="flex-1 p-8 overflow-auto">
         <Card>
@@ -200,9 +205,11 @@ export default function Dashboard() {
                               <SelectValue placeholder="Select status" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="all">All</SelectItem>
-                              <SelectItem value="Paid">Paid</SelectItem>
-                              <SelectItem value="Pending">Pending</SelectItem>
+                              {uniqueInvoiceStatuses.map(status => (
+                                <SelectItem key={status} value={status}>
+                                  {status}
+                                </SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                         </div>
@@ -213,19 +220,28 @@ export default function Dashboard() {
                               <SelectValue placeholder="Select type" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="all">All</SelectItem>
-                              <SelectItem value="Service">Service</SelectItem>
-                              <SelectItem value="Product">Product</SelectItem>
+                              {uniqueInvoiceTypes.map(type => (
+                                <SelectItem key={type} value={type}>
+                                  {type}
+                                </SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                         </div>
                         <div className="space-y-2">
                           <h4 className="font-medium leading-none">Supplier</h4>
-                          <Input
-                            placeholder="Filter by supplier"
-                            value={invoiceFilters.supplier}
-                            onChange={(e) => updateInvoiceFilter('supplier', e.target.value)}
-                          />
+                          <Select value={invoiceFilters.supplier} onValueChange={(value) => updateInvoiceFilter('supplier', value)}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select supplier" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {uniqueInvoiceSuppliers.map(supplier => (
+                                <SelectItem key={supplier} value={supplier}>
+                                  {supplier}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
                         <div className="space-y-2">
                           <h4 className="font-medium leading-none">Sum Range</h4>
@@ -246,11 +262,18 @@ export default function Dashboard() {
                         </div>
                         <div className="space-y-2">
                           <h4 className="font-medium leading-none">Refer</h4>
-                          <Input
-                            placeholder="Filter by refer"
-                            value={invoiceFilters.refer}
-                            onChange={(e) => updateInvoiceFilter('refer', e.target.value)}
-                          />
+                          <Select value={invoiceFilters.refer} onValueChange={(value) => updateInvoiceFilter('refer', value)}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select refer" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {uniqueInvoiceRefs.map(refer => (
+                                <SelectItem key={refer} value={refer}>
+                                  {refer}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
                       </div>
                     </PopoverContent>
@@ -260,15 +283,9 @@ export default function Dashboard() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Invoice ID</TableHead>
-                        <TableHead>Date Created</TableHead>
-                        <TableHead>Date Paid</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Supplier</TableHead>
-                        <TableHead>Sum</TableHead>
-                        <TableHead>Refer</TableHead>
-                        <TableHead>Invoice Data</TableHead> {/* Новая колонка */}
+                        {invoiceFiltersTitle.map(i => (
+                          <TableHead key={i}>{i}</TableHead>
+                        ))}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -277,7 +294,7 @@ export default function Dashboard() {
                           <TableCell>{invoice.id}</TableCell>
                           <TableCell>{invoice.dateCreated}</TableCell>
                           <TableCell>{invoice.datePaid || 'N/A'}</TableCell>
-                          <TableCell>{invoice.status}</TableCell>
+                          <TableCell className={getStatusColor(invoice.status)}>{invoice.status}</TableCell>
                           <TableCell>{invoice.type}</TableCell>
                           <TableCell>{invoice.supplier}</TableCell>
                           <TableCell>${invoice.sum.toFixed(2)}</TableCell>
@@ -317,9 +334,11 @@ export default function Dashboard() {
                               <SelectValue placeholder="Select status" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="all">All</SelectItem>
-                              <SelectItem value="Confirmed">Confirmed</SelectItem>
-                              <SelectItem value="Pending">Pending</SelectItem>
+                              {uniqueCarStatuses.map(status => (
+                                <SelectItem key={status} value={status}>
+                                  {status}
+                                </SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                         </div>
@@ -415,9 +434,11 @@ export default function Dashboard() {
                               <SelectValue placeholder="Select supplier" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="all">All</SelectItem>
-                              <SelectItem value="STAR">STAR</SelectItem>
-                              <SelectItem value="AVIS">AVIS</SelectItem>
+                              {uniqueCarSuppliers.map(supplier => (
+                                <SelectItem key={supplier} value={supplier}>
+                                  {supplier}
+                                </SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                         </div>
@@ -428,9 +449,11 @@ export default function Dashboard() {
                               <SelectValue placeholder="Select car group" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="all">All</SelectItem>
-                              <SelectItem value="economy">Economy</SelectItem>
-                              <SelectItem value="compact">Compact</SelectItem>
+                              {uniqueCarGroups.map(group => (
+                                <SelectItem key={group} value={group}>
+                                  {group}
+                                </SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                         </div>
@@ -454,9 +477,11 @@ export default function Dashboard() {
                               <SelectValue placeholder="Select car category" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="all">All</SelectItem>
-                              <SelectItem value="CA">CA</SelectItem>
-                              <SelectItem value="CB">CB</SelectItem>
+                              {uniqueCarCategories.map(category => (
+                                <SelectItem key={category} value={category}>
+                                  {category}
+                                </SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                         </div>
@@ -476,21 +501,9 @@ export default function Dashboard() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>ID</TableHead>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Pax</TableHead>
-                        <TableHead>Model</TableHead>
-                        <TableHead>Start Date</TableHead>
-                        <TableHead>End Date</TableHead>
-                        <TableHead>Rental Days</TableHead>
-                        <TableHead>Location</TableHead>
-                        <TableHead>Pick Up Place</TableHead>
-                        <TableHead>Supplier</TableHead>
-                        <TableHead>Car Group</TableHead>
-                        <TableHead>Insurance</TableHead>
-                        <TableHead>Car Category</TableHead>
-                        <TableHead>Clarification</TableHead>
+                        {carFiltersTitle.map(c => (
+                          <TableHead key={c}>{c}</TableHead>
+                        ))}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -498,7 +511,7 @@ export default function Dashboard() {
                         <TableRow key={request.id}>
                           <TableCell>{request.id}</TableCell>
                           <TableCell>{request.supplierName}</TableCell>
-                          <TableCell>{request.status}</TableCell>
+                          <TableCell className={getStatusColor(request.status)}>{request.status}</TableCell>
                           <TableCell>{request.requestDetail.pax}</TableCell>
                           <TableCell>{request.requestDetail.model}</TableCell>
                           <TableCell>{new Date(request.requestDetail.date_start).toLocaleDateString()}</TableCell>

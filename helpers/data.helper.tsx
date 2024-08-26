@@ -35,7 +35,7 @@ export function getCars(setCars: (e: CarInterface[]) => void) {
         {
             id: 'REQ-2023-001',
             supplierName: 'STAR',
-            status: 'Confirmed',
+            status: 'Paid',
             requestDetail: {
                 pax: "123",
                 model: "Honda Civic",
@@ -54,7 +54,7 @@ export function getCars(setCars: (e: CarInterface[]) => void) {
         {
             id: 'REQ-2023-002',
             supplierName: 'AVIS',
-            status: 'Pending',
+            status: 'Cancelled',
             requestDetail: {
                 pax: "456",
                 model: "Toyota Corolla",
