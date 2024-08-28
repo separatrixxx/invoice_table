@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { FileTextIcon, CarIcon } from "lucide-react";
 
 
-export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
+export const Sidebar = ({ activeTab, setActiveTab }: SidebarProps): JSX.Element => {
   return (
     <div className="w-16 bg-white shadow-md">
         <div className="flex flex-col items-center py-4">

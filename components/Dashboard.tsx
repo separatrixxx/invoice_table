@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -11,19 +10,30 @@ import { format } from "date-fns";
 import { getCars, getInvoice } from '../helpers/data.helper';
 import { InvoiceInterface } from '../interfaces/invoice.interface';
 import { CarInterface } from '../interfaces/car.interface';
-import Sidebar from './Sidebar/Sidebar';
+import { Sidebar } from './Sidebar/Sidebar';
+import { TableInvoices } from './TableInvoices/TableInvoices';
+import { TableCars } from './TableCars/TableCars';
+import { PageNavigation } from './PageNavigation/PageNavigation';
 
 
 export default function Dashboard() {
   const [invoices, setInvoices] = useState<InvoiceInterface[]>([]);
   const [carRentRequests, setCarRentRequests] = useState<CarInterface[]>([]);
+  const [activePageInvoices, setActivePageInvoices] = useState<number>(0);
+  const [activePageCars, setActivePageCars] = useState<number>(0);
+  const [activeTab, setActiveTab] = useState<string>('invoices');
+  const [itemsPerPage, setItemsPerPage] = useState<number>(10);
+  const [totalInvoiceItems, setTotalInvoiceItems] = useState<number>(0);
+  const [totalCarItems, setTotalCarItems] = useState<number>(0);
 
   useEffect(() => {
-    getInvoice(setInvoices);
-    getCars(setCarRentRequests);
-  }, []);
+    if (activeTab === 'invoices') {
+      getInvoice(activePageInvoices, itemsPerPage, setInvoices, setTotalInvoiceItems);
+    } else {
+      getCars(activePageCars, itemsPerPage, setCarRentRequests, setTotalCarItems);
+    }
+  }, [activePageInvoices, activePageCars, itemsPerPage, activeTab]);
 
-  const [activeTab, setActiveTab] = useState<string>('invoices');
   const [invoiceFilters, setInvoiceFilters] = useState({
     search: '',
     dateCreated: null as Date | null,
@@ -53,10 +63,10 @@ export default function Dashboard() {
     clarification: ''
   });
 
-  const uniqueInvoiceStatuses = useMemo(() => ['All', ...Array.from(new Set(invoices.map(invoice => invoice.status)))], [invoices]);
-  const uniqueInvoiceTypes = useMemo(() => ['All', ...Array.from(new Set(invoices.map(invoice => invoice.type)))], [invoices]);
-  const uniqueInvoiceSuppliers = useMemo(() => ['All', ...Array.from(new Set(invoices.map(invoice => invoice.supplier)))], [invoices]);
-  const uniqueInvoiceRefs = useMemo(() => ['All', ...Array.from(new Set(invoices.map(invoice => invoice.refer)))], [invoices]);
+  const uniqueInvoiceStatuses = useMemo(() => ['All', ...Array.from(new Set(invoices.map(invoice => invoice.status).filter(Boolean)))], [invoices]);
+  const uniqueInvoiceTypes = useMemo(() => ['All', ...Array.from(new Set(invoices.map(invoice => invoice.type).filter(Boolean)))], [invoices]);
+  const uniqueInvoiceSuppliers = useMemo(() => ['All', ...Array.from(new Set(invoices.map(invoice => invoice.supplier).filter(Boolean)))], [invoices]);
+  const uniqueInvoiceRefs = useMemo(() => ['All', ...Array.from(new Set(invoices.map(invoice => invoice.refer).filter(Boolean)))], [invoices]);
 
   const uniqueCarStatuses = useMemo(() => ['All', ...Array.from(new Set(carRentRequests.map(request => request.status)))], [carRentRequests]);
   const uniqueCarSuppliers = useMemo(() => ['All', ...Array.from(new Set(carRentRequests.map(request => request.requestDetail.supplier)))], [carRentRequests]);
@@ -71,41 +81,46 @@ export default function Dashboard() {
       const statusMatch = invoiceFilters.status === 'All' || invoice.status === invoiceFilters.status;
       const typeMatch = invoiceFilters.type === 'All' || invoice.type === invoiceFilters.type;
       const supplierMatch = invoiceFilters.supplier === 'All' || invoice.supplier.toLowerCase().includes(invoiceFilters.supplier.toLowerCase());
-      const sumMatch = 
+      const sumMatch =
         (!invoiceFilters.minSum || invoice.sum >= parseFloat(invoiceFilters.minSum)) &&
         (!invoiceFilters.maxSum || invoice.sum <= parseFloat(invoiceFilters.maxSum));
       const referMatch = invoiceFilters.refer === 'All' || invoice.refer.toLowerCase().includes(invoiceFilters.refer.toLowerCase());
-      
+
       return searchMatch && dateCreatedMatch && datePaidMatch && statusMatch && typeMatch && supplierMatch && sumMatch && referMatch;
     });
   }, [invoiceFilters, invoices]);
 
   const filteredCarRequests = useMemo(() => {
     return carRentRequests.filter(request => {
-      const searchMatch = 
+      const searchMatch =
         request.id.toLowerCase().includes(carFilters.search.toLowerCase()) ||
         request.supplierName.toLowerCase().includes(carFilters.search.toLowerCase());
       const statusMatch = carFilters.status === 'All' || request.status === carFilters.status;
       const paxMatch = !carFilters.pax || request.requestDetail.pax.includes(carFilters.pax);
       const modelMatch = !carFilters.model || request.requestDetail.model.toLowerCase().includes(carFilters.model.toLowerCase());
-      const dateStartMatch = !carFilters.dateStart || (new Date(request.requestDetail.date_start) >= new Date(carFilters.dateStart as Date));
-      const dateEndMatch = !carFilters.dateEnd || (new Date(request.requestDetail.date_end) <= new Date(carFilters.dateEnd as Date));
-      const rentalDaysMatch = 
+      const dateStartMatch = !carFilters.dateStart || new Date(request.requestDetail.date_start) >= new Date(carFilters.dateStart as Date);
+      const dateEndMatch = !carFilters.dateEnd || new Date(request.requestDetail.date_end) <= new Date(carFilters.dateEnd as Date);
+      const rentalDaysMatch =
         (!carFilters.minRentalDays || request.requestDetail.rental_days >= parseInt(carFilters.minRentalDays)) &&
         (!carFilters.maxRentalDays || request.requestDetail.rental_days <= parseInt(carFilters.maxRentalDays));
       const locationMatch = !carFilters.location || request.requestDetail.location.toLowerCase().includes(carFilters.location.toLowerCase());
       const pickUpPlaceMatch = !carFilters.pickUpPlace || request.requestDetail.pick_up_place.toLowerCase().includes(carFilters.pickUpPlace.toLowerCase());
       const supplierMatch = carFilters.supplier === 'All' || request.requestDetail.supplier === carFilters.supplier;
       const carGroupMatch = carFilters.carGroup === 'All' || request.requestDetail.car_group === carFilters.carGroup;
-      const insuranceMatch = carFilters.insurance === 'all' || (carFilters.insurance === 'yes' && request.requestDetail.insurance) || (carFilters.insurance === 'no' && !request.requestDetail.insurance);
+      const insuranceMatch =
+        carFilters.insurance === 'all' ||
+        (carFilters.insurance === 'yes' && request.requestDetail.insurance) ||
+        (carFilters.insurance === 'no' && !request.requestDetail.insurance);
       const carCategoryMatch = carFilters.carCategory === 'All' || request.requestDetail.car_category === carFilters.carCategory;
-      const clarificationMatch = !carFilters.clarification || request.clarificationText.toLowerCase().includes(carFilters.clarification.toLowerCase());
-      
-      return searchMatch && statusMatch && paxMatch && modelMatch && dateStartMatch && dateEndMatch && 
-             rentalDaysMatch && locationMatch && pickUpPlaceMatch && supplierMatch && carGroupMatch && 
-             insuranceMatch && carCategoryMatch && clarificationMatch;
+      const clarificationMatch =
+        !carFilters.clarification || request.clarificationText.toLowerCase().includes(carFilters.clarification.toLowerCase());
+
+      return (
+        searchMatch && statusMatch && paxMatch && modelMatch && dateStartMatch && dateEndMatch && rentalDaysMatch && locationMatch
+        && pickUpPlaceMatch && supplierMatch && carGroupMatch && insuranceMatch && carCategoryMatch && clarificationMatch);
     });
   }, [carFilters, carRentRequests]);
+
 
   const updateInvoiceFilter = (key: keyof typeof invoiceFilters, value: any) => {
     setInvoiceFilters(prev => ({ ...prev, [key]: value }));
@@ -125,43 +140,37 @@ export default function Dashboard() {
     }
   };
 
-  const invoiceFiltersTitle: string[] = ['Invoice ID', 'Date Created', 'Date Paid', 'Status', 'Type', 'Supplier',
-    'Sum', 'Refer', 'Invoice Data'];
-
-  const carFiltersTitle: string[] = ['ID', 'Name', 'Status', 'Pax', 'Model', 'Start Date', 'End Date', 'Rental Days',
-    'Location', 'Pick Up Place', 'Supplier', 'Car Group', 'Insurance', 'Car Category', 'Clarification'];
-
   return (
     <div className="flex h-screen bg-gray-100">
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
-      {/* Main content */}
-      <div className="flex-1 p-8 overflow-auto">
-        <Card>
+      <div className="flex-1 p-8">
+        <Card className="h-[85vh]">
           <CardHeader>
             <CardTitle>{activeTab === 'invoices' ? 'Invoices' : 'Car Rent Requests'}</CardTitle>
           </CardHeader>
-          <CardContent>
-            {activeTab === 'invoices' ? (
-              <>
-                <div className="flex space-x-2 mb-4">
-                  <div className="relative flex-grow">
-                    <SearchIcon className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Search by ID..."
-                      value={invoiceFilters.search}
-                      onChange={(e) => updateInvoiceFilter('search', e.target.value)}
-                      className="pl-8"
-                    />
-                  </div>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline">
-                        <FilterIcon className="mr-2 h-4 w-4" />
-                        Filters
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-80 max-h-96 overflow-y-auto">
-                      <div className="grid gap-4">
+          <CardContent className="flex flex-col h-full">
+            <div className="flex space-x-2 mb-4">
+              <div className="relative flex-grow">
+                <SearchIcon className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder={activeTab === 'invoices' ? "Search by ID..." : "Search by ID or name..."}
+                  value={activeTab === 'invoices' ? invoiceFilters.search : carFilters.search}
+                  onChange={(e) => activeTab === 'invoices' ? updateInvoiceFilter('search', e.target.value) : updateCarFilter('search', e.target.value)}
+                  className="pl-8"
+                />
+              </div>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline">
+                    <FilterIcon className="mr-2 h-4 w-4" />
+                    Filters
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80 max-h-96 overflow-y-auto">
+                  <div className="grid gap-4">
+                    {activeTab === 'invoices' ? (
+                      <>
+                        {/* Invoice Filters */}
                         <div className="space-y-2">
                           <h4 className="font-medium leading-none">Date Created</h4>
                           <Popover>
@@ -205,8 +214,8 @@ export default function Dashboard() {
                               <SelectValue placeholder="Select status" />
                             </SelectTrigger>
                             <SelectContent>
-                              {uniqueInvoiceStatuses.map(status => (
-                                <SelectItem key={status} value={status}>
+                              {uniqueInvoiceStatuses.map((status, i) => (
+                                <SelectItem key={status + i} value={status}>
                                   {status}
                                 </SelectItem>
                               ))}
@@ -220,8 +229,8 @@ export default function Dashboard() {
                               <SelectValue placeholder="Select type" />
                             </SelectTrigger>
                             <SelectContent>
-                              {uniqueInvoiceTypes.map(type => (
-                                <SelectItem key={type} value={type}>
+                              {uniqueInvoiceTypes.map((type, i) => (
+                                <SelectItem key={type + i} value={type}>
                                   {type}
                                 </SelectItem>
                               ))}
@@ -235,8 +244,8 @@ export default function Dashboard() {
                               <SelectValue placeholder="Select supplier" />
                             </SelectTrigger>
                             <SelectContent>
-                              {uniqueInvoiceSuppliers.map(supplier => (
-                                <SelectItem key={supplier} value={supplier}>
+                              {uniqueInvoiceSuppliers.map((supplier, i) => (
+                                <SelectItem key={supplier + i} value={supplier}>
                                   {supplier}
                                 </SelectItem>
                               ))}
@@ -267,66 +276,18 @@ export default function Dashboard() {
                               <SelectValue placeholder="Select refer" />
                             </SelectTrigger>
                             <SelectContent>
-                              {uniqueInvoiceRefs.map(refer => (
-                                <SelectItem key={refer} value={refer}>
+                              {uniqueInvoiceRefs.map((refer, i) => (
+                                <SelectItem key={refer + i} value={refer}>
                                   {refer}
                                 </SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
                         </div>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        {invoiceFiltersTitle.map(i => (
-                          <TableHead key={i}>{i}</TableHead>
-                        ))}
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredInvoices.map((invoice) => (
-                        <TableRow key={invoice.id}>
-                          <TableCell>{invoice.id}</TableCell>
-                          <TableCell>{invoice.dateCreated}</TableCell>
-                          <TableCell>{invoice.datePaid || 'N/A'}</TableCell>
-                          <TableCell className={getStatusColor(invoice.status)}>{invoice.status}</TableCell>
-                          <TableCell>{invoice.type}</TableCell>
-                          <TableCell>{invoice.supplier}</TableCell>
-                          <TableCell>${invoice.sum.toFixed(2)}</TableCell>
-                          <TableCell>{invoice.refer}</TableCell>
-                          <TableCell>{invoice.invoiceData.join(', ')}</TableCell> {/* Отображаем массив через запятую */}
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="flex space-x-2 mb-4">
-                  <div className="relative flex-grow">
-                    <SearchIcon className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Search by ID or name..."
-                      value={carFilters.search}
-                      onChange={(e) => updateCarFilter('search', e.target.value)}
-                      className="pl-8"
-                    />
-                  </div>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline">
-                        <FilterIcon className="mr-2 h-4 w-4" />
-                        Filters
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-80 max-h-96 overflow-y-auto">
-                      <div className="grid gap-4">
+                      </>
+                    ) : (
+                      <>
+                        {/* Car Rent Request Filters */}
                         <div className="space-y-2">
                           <h4 className="font-medium leading-none">Status</h4>
                           <Select value={carFilters.status} onValueChange={(value) => updateCarFilter('status', value)}>
@@ -334,8 +295,8 @@ export default function Dashboard() {
                               <SelectValue placeholder="Select status" />
                             </SelectTrigger>
                             <SelectContent>
-                              {uniqueCarStatuses.map(status => (
-                                <SelectItem key={status} value={status}>
+                              {uniqueCarStatuses.map((status, i) => (
+                                <SelectItem key={status + i} value={status}>
                                   {status}
                                 </SelectItem>
                               ))}
@@ -434,8 +395,8 @@ export default function Dashboard() {
                               <SelectValue placeholder="Select supplier" />
                             </SelectTrigger>
                             <SelectContent>
-                              {uniqueCarSuppliers.map(supplier => (
-                                <SelectItem key={supplier} value={supplier}>
+                              {uniqueCarSuppliers.map((supplier, i) => (
+                                <SelectItem key={supplier + i} value={supplier}>
                                   {supplier}
                                 </SelectItem>
                               ))}
@@ -449,8 +410,8 @@ export default function Dashboard() {
                               <SelectValue placeholder="Select car group" />
                             </SelectTrigger>
                             <SelectContent>
-                              {uniqueCarGroups.map(group => (
-                                <SelectItem key={group} value={group}>
+                              {uniqueCarGroups.map((group, i) => (
+                                <SelectItem key={group + i} value={group}>
                                   {group}
                                 </SelectItem>
                               ))}
@@ -477,8 +438,8 @@ export default function Dashboard() {
                               <SelectValue placeholder="Select car category" />
                             </SelectTrigger>
                             <SelectContent>
-                              {uniqueCarCategories.map(category => (
-                                <SelectItem key={category} value={category}>
+                              {uniqueCarCategories.map((category, i) => (
+                                <SelectItem key={category + i} value={category}>
                                   {category}
                                 </SelectItem>
                               ))}
@@ -493,44 +454,22 @@ export default function Dashboard() {
                             onChange={(e) => updateCarFilter('clarification', e.target.value)}
                           />
                         </div>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        {carFiltersTitle.map(c => (
-                          <TableHead key={c}>{c}</TableHead>
-                        ))}
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredCarRequests.map((request) => (
-                        <TableRow key={request.id}>
-                          <TableCell>{request.id}</TableCell>
-                          <TableCell>{request.supplierName}</TableCell>
-                          <TableCell className={getStatusColor(request.status)}>{request.status}</TableCell>
-                          <TableCell>{request.requestDetail.pax}</TableCell>
-                          <TableCell>{request.requestDetail.model}</TableCell>
-                          <TableCell>{new Date(request.requestDetail.date_start).toLocaleDateString()}</TableCell>
-                          <TableCell>{new Date(request.requestDetail.date_end).toLocaleDateString()}</TableCell>
-                          <TableCell>{request.requestDetail.rental_days}</TableCell>
-                          <TableCell>{request.requestDetail.location}</TableCell>
-                          <TableCell>{request.requestDetail.pick_up_place}</TableCell>
-                          <TableCell>{request.requestDetail.supplier}</TableCell>
-                          <TableCell>{request.requestDetail.car_group}</TableCell>
-                          <TableCell>{request.requestDetail.insurance ? 'Yes' : 'No'}</TableCell>
-                          <TableCell>{request.requestDetail.car_category}</TableCell>
-                          <TableCell>{request.clarificationText}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </>
-            )}
+                      </>
+                    )}
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
+            <div className="overflow-y-auto flex-1">
+              {activeTab === 'invoices' ? (
+                <TableInvoices filteredInvoices={filteredInvoices} getStatusColor={getStatusColor} />
+              ) : (
+                <TableCars filteredCarRequests={filteredCarRequests} getStatusColor={getStatusColor} />
+              )}
+            </div>
+            <PageNavigation activeTab={activeTab} activePageInvoices={activePageInvoices} activePageCars={activePageCars}
+              itemsPerPage={itemsPerPage} totalInvoiceItems={totalInvoiceItems} totalCarItems={totalCarItems}
+              setActivePageInvoices={setActivePageInvoices} setActivePageCars={setActivePageCars} setItemsPerPage={setItemsPerPage} />
           </CardContent>
         </Card>
       </div>
