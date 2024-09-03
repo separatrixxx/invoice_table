@@ -36,15 +36,35 @@ export default function Dashboard() {
 
   const [invoiceFilters, setInvoiceFilters] = useState({
     search: '',
+    name: '',
+    email: '',
+    telephone: '',
+    remarks: '',
     dateCreated: null as Date | null,
     datePaid: null as Date | null,
     status: 'All',
     type: 'All',
     supplier: 'All',
-    minSum: '',
-    maxSum: '',
-    refer: 'All'
+    confirmed: 'All',
+    placeOfDelivery: 'All',
+    carType: 'All',
+    insurance: 'All',
+    extras: 'All',
+    bookingWindow: 'All',
+    sales: 'All',
+    discount: 'All',
+    rentStart: null as Date | null,
+    rentalEnds: null as Date | null,
+    minDays: '',
+    maxDays: '',
+    minLeftToPay: '',
+    maxLeftToPay: '',
+    minTotalPrice: '',
+    maxTotalPrice: '',
+    minCommission: '',
+    maxCommission: '',
   });
+
   const [carFilters, setCarFilters] = useState({
     search: '',
     status: 'All',
@@ -66,7 +86,14 @@ export default function Dashboard() {
   const uniqueInvoiceStatuses = useMemo(() => ['All', ...Array.from(new Set(invoices.map(invoice => invoice.status).filter(Boolean)))], [invoices]);
   const uniqueInvoiceTypes = useMemo(() => ['All', ...Array.from(new Set(invoices.map(invoice => invoice.type).filter(Boolean)))], [invoices]);
   const uniqueInvoiceSuppliers = useMemo(() => ['All', ...Array.from(new Set(invoices.map(invoice => invoice.supplier).filter(Boolean)))], [invoices]);
-  const uniqueInvoiceRefs = useMemo(() => ['All', ...Array.from(new Set(invoices.map(invoice => invoice.refer).filter(Boolean)))], [invoices]);
+  const uniqueInvoiceConfirmations = useMemo(() => ['All', ...Array.from(new Set(invoices.map(invoice => invoice.confirmed).filter(Boolean)))], [invoices]);
+  const uniquePlaceOfDeliveries = useMemo(() => ['All', ...Array.from(new Set(invoices.map(invoice => invoice.place_of_delivery).filter(Boolean)))], [invoices]);
+  const uniqueCarTypes = useMemo(() => ['All', ...Array.from(new Set(invoices.map(invoice => invoice.car_type).filter(Boolean)))], [invoices]);
+  const uniqueInsurances = useMemo(() => ['All', ...Array.from(new Set(invoices.map(invoice => invoice.insurance).filter(Boolean)))], [invoices]);
+  const uniqueExtras = useMemo(() => ['All', ...Array.from(new Set(invoices.map(invoice => invoice.extras).filter(Boolean)))], [invoices]);
+  const uniqueBookingWindows = useMemo(() => ['All', ...Array.from(new Set(invoices.map(invoice => invoice.booking_window).filter(Boolean)))], [invoices]);
+  const uniqueSales = useMemo(() => ['All', ...Array.from(new Set(invoices.map(invoice => invoice.sales).filter(Boolean)))], [invoices]);
+  const uniqueDiscounts = useMemo(() => ['All', ...Array.from(new Set(invoices.map(invoice => invoice.discount).filter(Boolean)))], [invoices]);
 
   const uniqueCarStatuses = useMemo(() => ['All', ...Array.from(new Set(carRentRequests.map(request => request.status)))], [carRentRequests]);
   const uniqueCarSuppliers = useMemo(() => ['All', ...Array.from(new Set(carRentRequests.map(request => request.requestDetail.supplier)))], [carRentRequests]);
@@ -75,18 +102,49 @@ export default function Dashboard() {
 
   const filteredInvoices = useMemo(() => {
     return invoices.filter(invoice => {
-      const searchMatch = invoice.id.toLowerCase().includes(invoiceFilters.search.toLowerCase());
-      const dateCreatedMatch = !invoiceFilters.dateCreated || invoice.dateCreated === format(invoiceFilters.dateCreated, 'yyyy-MM-dd');
-      const datePaidMatch = !invoiceFilters.datePaid || invoice.datePaid === format(invoiceFilters.datePaid, 'yyyy-MM-dd');
+      const searchMatch =
+        invoice.invoice_id.toLowerCase().includes(invoiceFilters.search.toLowerCase()) ||
+        invoice.name.toLowerCase().includes(invoiceFilters.search.toLowerCase()) ||
+        invoice.email.toLowerCase().includes(invoiceFilters.search.toLowerCase()) ||
+        invoice.telephone.toLowerCase().includes(invoiceFilters.search.toLowerCase()) ||
+        (invoice.remarks && invoice.remarks.toLowerCase().includes(invoiceFilters.search.toLowerCase()));
       const statusMatch = invoiceFilters.status === 'All' || invoice.status === invoiceFilters.status;
       const typeMatch = invoiceFilters.type === 'All' || invoice.type === invoiceFilters.type;
-      const supplierMatch = invoiceFilters.supplier === 'All' || invoice.supplier.toLowerCase().includes(invoiceFilters.supplier.toLowerCase());
-      const sumMatch =
-        (!invoiceFilters.minSum || invoice.sum >= parseFloat(invoiceFilters.minSum)) &&
-        (!invoiceFilters.maxSum || invoice.sum <= parseFloat(invoiceFilters.maxSum));
-      const referMatch = invoiceFilters.refer === 'All' || invoice.refer.toLowerCase().includes(invoiceFilters.refer.toLowerCase());
+      const supplierMatch = invoiceFilters.supplier === 'All' || invoice.supplier === invoiceFilters.supplier;
+      const confirmedMatch = invoiceFilters.confirmed === 'All' || invoice.confirmed === invoiceFilters.confirmed;
+      const placeOfDeliveryMatch = invoiceFilters.placeOfDelivery === 'All' || invoice.place_of_delivery === invoiceFilters.placeOfDelivery;
+      const carTypeMatch = invoiceFilters.carType === 'All' || invoice.car_type === invoiceFilters.carType;
+      const insuranceMatch = invoiceFilters.insurance === 'All' || invoice.insurance === invoiceFilters.insurance;
+      const extrasMatch = invoiceFilters.extras === 'All' || invoice.extras === invoiceFilters.extras;
+      const bookingWindowMatch = invoiceFilters.bookingWindow === 'All' || invoice.booking_window === invoiceFilters.bookingWindow;
+      const salesMatch = invoiceFilters.sales === 'All' || invoice.sales === invoiceFilters.sales;
+      const discountMatch = invoiceFilters.discount === 'All' || invoice.discount === invoiceFilters.discount;
 
-      return searchMatch && dateCreatedMatch && datePaidMatch && statusMatch && typeMatch && supplierMatch && sumMatch && referMatch;
+      const dateCreatedMatch = !invoiceFilters.dateCreated || invoice.date_created === format(invoiceFilters.dateCreated, 'yyyy-MM-dd');
+      const datePaidMatch = !invoiceFilters.datePaid || invoice.date_paid === format(invoiceFilters.datePaid, 'yyyy-MM-dd');
+      const rentStartMatch = !invoiceFilters.rentStart || invoice.rent_start === format(invoiceFilters.rentStart, 'yyyy-MM-dd');
+      const rentalEndsMatch = !invoiceFilters.rentalEnds || invoice.rental_ends === format(invoiceFilters.rentalEnds, 'yyyy-MM-dd');
+
+      const daysMatch =
+        (!invoiceFilters.minDays || invoice.days >= parseInt(invoiceFilters.minDays)) &&
+        (!invoiceFilters.maxDays || invoice.days <= parseInt(invoiceFilters.maxDays));
+
+      const leftToPayMatch =
+        (!invoiceFilters.minLeftToPay || invoice.left_to_pay >= parseFloat(invoiceFilters.minLeftToPay)) &&
+        (!invoiceFilters.maxLeftToPay || invoice.left_to_pay <= parseFloat(invoiceFilters.maxLeftToPay));
+
+      const totalPriceMatch =
+        (!invoiceFilters.minTotalPrice || invoice.total_price >= parseFloat(invoiceFilters.minTotalPrice)) &&
+        (!invoiceFilters.maxTotalPrice || invoice.total_price <= parseFloat(invoiceFilters.maxTotalPrice));
+
+      const commissionMatch =
+        (!invoiceFilters.minCommission || invoice.commission >= parseFloat(invoiceFilters.minCommission)) &&
+        (!invoiceFilters.maxCommission || invoice.commission <= parseFloat(invoiceFilters.maxCommission));
+
+      return searchMatch && statusMatch && typeMatch && supplierMatch && confirmedMatch && placeOfDeliveryMatch &&
+        carTypeMatch && insuranceMatch && extrasMatch && bookingWindowMatch && salesMatch && discountMatch &&
+        dateCreatedMatch && datePaidMatch && rentStartMatch && rentalEndsMatch &&
+        daysMatch && leftToPayMatch && totalPriceMatch && commissionMatch;
     });
   }, [invoiceFilters, invoices]);
 
@@ -143,7 +201,7 @@ export default function Dashboard() {
   return (
     <div className="flex h-screen bg-gray-100">
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
-      <div className="flex-1 p-8">
+      <div className="flex-1 p-8 w-2/3">
         <Card className="h-[85vh]">
           <CardHeader>
             <CardTitle>{activeTab === 'invoices' ? 'Invoices' : 'Car Rent Requests'}</CardTitle>
@@ -153,7 +211,7 @@ export default function Dashboard() {
               <div className="relative flex-grow">
                 <SearchIcon className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder={activeTab === 'invoices' ? "Search by ID..." : "Search by ID or name..."}
+                  placeholder={activeTab === 'invoices' ? "Search by ID, Name, Email or Phone" : "Search by ID or name..."}
                   value={activeTab === 'invoices' ? invoiceFilters.search : carFilters.search}
                   onChange={(e) => activeTab === 'invoices' ? updateInvoiceFilter('search', e.target.value) : updateCarFilter('search', e.target.value)}
                   className="pl-8"
@@ -171,6 +229,38 @@ export default function Dashboard() {
                     {activeTab === 'invoices' ? (
                       <>
                         {/* Invoice Filters */}
+                        <div className="space-y-2">
+                          <h4 className="font-medium leading-none">Name</h4>
+                          <Input
+                            placeholder="Filter by name"
+                            value={invoiceFilters.name}
+                            onChange={(e) => updateInvoiceFilter('name', e.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <h4 className="font-medium leading-none">Email</h4>
+                          <Input
+                            placeholder="Filter by email"
+                            value={invoiceFilters.email}
+                            onChange={(e) => updateInvoiceFilter('email', e.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <h4 className="font-medium leading-none">Phone</h4>
+                          <Input
+                            placeholder="Filter by phone"
+                            value={invoiceFilters.telephone}
+                            onChange={(e) => updateInvoiceFilter('telephone', e.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <h4 className="font-medium leading-none">Remarks</h4>
+                          <Input
+                            placeholder="Filter by remarks"
+                            value={invoiceFilters.remarks}
+                            onChange={(e) => updateInvoiceFilter('remarks', e.target.value)}
+                          />
+                        </div>
                         <div className="space-y-2">
                           <h4 className="font-medium leading-none">Date Created</h4>
                           <Popover>
@@ -253,36 +343,227 @@ export default function Dashboard() {
                           </Select>
                         </div>
                         <div className="space-y-2">
-                          <h4 className="font-medium leading-none">Sum Range</h4>
-                          <div className="flex space-x-2">
-                            <Input
-                              placeholder="Min"
-                              type="number"
-                              value={invoiceFilters.minSum}
-                              onChange={(e) => updateInvoiceFilter('minSum', e.target.value)}
-                            />
-                            <Input
-                              placeholder="Max"
-                              type="number"
-                              value={invoiceFilters.maxSum}
-                              onChange={(e) => updateInvoiceFilter('maxSum', e.target.value)}
-                            />
-                          </div>
-                        </div>
-                        <div className="space-y-2">
-                          <h4 className="font-medium leading-none">Refer</h4>
-                          <Select value={invoiceFilters.refer} onValueChange={(value) => updateInvoiceFilter('refer', value)}>
+                          <h4 className="font-medium leading-none">Confirmed</h4>
+                          <Select value={invoiceFilters.confirmed} onValueChange={(value) => updateInvoiceFilter('confirmed', value)}>
                             <SelectTrigger>
-                              <SelectValue placeholder="Select refer" />
+                              <SelectValue placeholder="Select confirmation" />
                             </SelectTrigger>
                             <SelectContent>
-                              {uniqueInvoiceRefs.map((refer, i) => (
-                                <SelectItem key={refer + i} value={refer}>
-                                  {refer}
+                              {uniqueInvoiceConfirmations.map((confirmed, i) => (
+                                <SelectItem key={confirmed || '' + i} value={confirmed || ''}>
+                                  {confirmed}
                                 </SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <h4 className="font-medium leading-none">Place of Delivery</h4>
+                          <Select value={invoiceFilters.placeOfDelivery} onValueChange={(value) => updateInvoiceFilter('placeOfDelivery', value)}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select place of delivery" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {uniquePlaceOfDeliveries.map((placeOfDelivery, i) => (
+                                <SelectItem key={placeOfDelivery + i} value={placeOfDelivery}>
+                                  {placeOfDelivery}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <h4 className="font-medium leading-none">Type of Car</h4>
+                          <Select value={invoiceFilters.carType} onValueChange={(value) => updateInvoiceFilter('carType', value)}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select car type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {uniqueCarTypes.map((carType, i) => (
+                                <SelectItem key={carType + i} value={carType}>
+                                  {carType}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <h4 className="font-medium leading-none">Insurance + Extras</h4>
+                          <div className="flex space-x-2">
+                            <Select value={invoiceFilters.insurance} onValueChange={(value) => updateInvoiceFilter('insurance', value)}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select insurance" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {uniqueInsurances.map((insurance, i) => (
+                                  <SelectItem key={insurance + i} value={insurance}>
+                                    {insurance}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <Select value={invoiceFilters.extras} onValueChange={(value) => updateInvoiceFilter('extras', value)}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select extras" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {uniqueExtras.map((extras, i) => (
+                                  <SelectItem key={extras || '' + i} value={extras || ''}>
+                                    {extras}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <h4 className="font-medium leading-none">Booking Window</h4>
+                          <Select value={invoiceFilters.bookingWindow} onValueChange={(value) => updateInvoiceFilter('bookingWindow', value)}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select booking window" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {uniqueBookingWindows.map((bookingWindow, i) => (
+                                <SelectItem key={bookingWindow || '' + i} value={bookingWindow || ''}>
+                                  {bookingWindow}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <h4 className="font-medium leading-none">Sales</h4>
+                          <Select value={invoiceFilters.sales} onValueChange={(value) => updateInvoiceFilter('sales', value)}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select sales" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {uniqueSales.map((sales, i) => (
+                                <SelectItem key={sales || '' + i} value={sales || ''}>
+                                  {sales}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <h4 className="font-medium leading-none">Discount</h4>
+                          <Select value={invoiceFilters.discount} onValueChange={(value) => updateInvoiceFilter('discount', value)}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select discount" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {uniqueDiscounts.map((discount, i) => (
+                                <SelectItem key={discount || '' + i} value={discount || ''}>
+                                  {discount}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <h4 className="font-medium leading-none">Rent Start</h4>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button variant="outline" className="w-full justify-start text-left font-normal">
+                                {invoiceFilters.rentStart ? format(invoiceFilters.rentStart, 'PPP') : <span>Pick a date</span>}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0">
+                              <Calendar
+                                mode="single"
+                                selected={invoiceFilters.rentStart || undefined}
+                                onSelect={(date) => updateInvoiceFilter('rentStart', date)}
+                                initialFocus
+                              />
+                            </PopoverContent>
+                          </Popover>
+                        </div>
+                        <div className="space-y-2">
+                          <h4 className="font-medium leading-none">Rental Ends</h4>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button variant="outline" className="w-full justify-start text-left font-normal">
+                                {invoiceFilters.rentalEnds ? format(invoiceFilters.rentalEnds, 'PPP') : <span>Pick a date</span>}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0">
+                              <Calendar
+                                mode="single"
+                                selected={invoiceFilters.rentalEnds || undefined}
+                                onSelect={(date) => updateInvoiceFilter('rentalEnds', date)}
+                                initialFocus
+                              />
+                            </PopoverContent>
+                          </Popover>
+                        </div>
+                        <div className="space-y-2">
+                          <h4 className="font-medium leading-none">Days</h4>
+                          <div className="flex space-x-2">
+                            <Input
+                              placeholder="Min"
+                              type="number"
+                              value={invoiceFilters.minDays}
+                              onChange={(e) => updateInvoiceFilter('minDays', e.target.value)}
+                            />
+                            <Input
+                              placeholder="Max"
+                              type="number"
+                              value={invoiceFilters.maxDays}
+                              onChange={(e) => updateInvoiceFilter('maxDays', e.target.value)}
+                            />
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <h4 className="font-medium leading-none">Left to Pay</h4>
+                          <div className="flex space-x-2">
+                            <Input
+                              placeholder="Min"
+                              type="number"
+                              value={invoiceFilters.minLeftToPay}
+                              onChange={(e) => updateInvoiceFilter('minLeftToPay', e.target.value)}
+                            />
+                            <Input
+                              placeholder="Max"
+                              type="number"
+                              value={invoiceFilters.maxLeftToPay}
+                              onChange={(e) => updateInvoiceFilter('maxLeftToPay', e.target.value)}
+                            />
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <h4 className="font-medium leading-none">Total Price</h4>
+                          <div className="flex space-x-2">
+                            <Input
+                              placeholder="Min"
+                              type="number"
+                              value={invoiceFilters.minTotalPrice}
+                              onChange={(e) => updateInvoiceFilter('minTotalPrice', e.target.value)}
+                            />
+                            <Input
+                              placeholder="Max"
+                              type="number"
+                              value={invoiceFilters.maxTotalPrice}
+                              onChange={(e) => updateInvoiceFilter('maxTotalPrice', e.target.value)}
+                            />
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <h4 className="font-medium leading-none">Commission</h4>
+                          <div className="flex space-x-2">
+                            <Input
+                              placeholder="Min"
+                              type="number"
+                              value={invoiceFilters.minCommission}
+                              onChange={(e) => updateInvoiceFilter('minCommission', e.target.value)}
+                            />
+                            <Input
+                              placeholder="Max"
+                              type="number"
+                              value={invoiceFilters.maxCommission}
+                              onChange={(e) => updateInvoiceFilter('maxCommission', e.target.value)}
+                            />
+                          </div>
                         </div>
                       </>
                     ) : (
