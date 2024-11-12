@@ -33,16 +33,16 @@ export const TableTransfer = ({ filteredTransferRequests, getStatusColor }: Tabl
                         <TableCell>{request.requestDetail.vehicle_type}</TableCell>
                         <TableCell>{request.requestDetail.payment_method}</TableCell>
                         <TableCell>{request.requestDetail.representative}</TableCell>
-                        <TableCell>{request.requestDetail.base_cost}</TableCell>
-                        <TableCell>{request.requestDetail.total_cost}</TableCell>
-                        <TableCell>{request.requestDetail.discount}</TableCell>
-                        <TableCell>{request.requestDetail.deposit}</TableCell>
+                        <TableCell>{request.requestDetail.base_cost + '€'}</TableCell>
+                        <TableCell>{request.requestDetail.total_cost + '€'}</TableCell>
+                        <TableCell>{request.requestDetail.discount + '€'}</TableCell>
+                        <TableCell>{request.requestDetail.deposit + '€'}</TableCell>
                         <TableCell>{request.requestDetail.is_return ? 'Yes' : 'No'}</TableCell>
-                        <TableCell>{request.requestDetail.child_seat_cost}</TableCell>
+                        <TableCell>{request.requestDetail.child_seat_cost + '€'}</TableCell>
                         <TableCell>{request.requestDetail.additional_driver.hours}</TableCell>
-                        <TableCell>{request.requestDetail.additional_driver.commission}</TableCell>
-                        <TableCell>{request.requestDetail.additional_driver.gross_cost}</TableCell>
-                        <TableCell>{request.requestDetail.additional_driver.net_cost}</TableCell>
+                        <TableCell>{request.requestDetail.additional_driver.commission + '€'}</TableCell>
+                        <TableCell>{request.requestDetail.additional_driver.gross_cost + '€'}</TableCell>
+                        <TableCell>{(request.requestDetail.additional_driver.net_cost || 0) + '€'}</TableCell>
                         <TableCell>{request.requestDetail.luggage.big_suitcases}</TableCell>
                         <TableCell>{request.requestDetail.luggage.cabin_bags}</TableCell>
                         <TableCell>{request.requestDetail.luggage.sky_bags}</TableCell>
