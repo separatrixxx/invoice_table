@@ -25,7 +25,6 @@ export interface InvoiceInterface {
     commission: number;
 }
 
-
 export interface InvoiceData {
     activePage: number,
     invoices: InvoiceInterface[],

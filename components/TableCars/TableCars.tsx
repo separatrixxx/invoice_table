@@ -1,9 +1,8 @@
 import { TableCarsProps } from './TableCars.props';
-import React from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 
-export const TableCars = ({ filteredCarRequests, getStatusColor }:TableCarsProps): JSX.Element => {
+export const TableCars = ({ filteredCarRequests, getStatusColor }: TableCarsProps): JSX.Element => {
     const carFiltersTitle: string[] = ['Car ID', 'Name', 'Status', 'Pax', 'Model', 'Start Date', 'End Date', 'Rental Days',
         'Location', 'Pick Up Place', 'Supplier', 'Car Group', 'Insurance', 'Car Category', 'Clarification'];
 

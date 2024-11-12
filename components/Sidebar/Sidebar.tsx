@@ -1,6 +1,6 @@
 import { SidebarProps } from './Sidebar.props';
 import { Button } from "@/components/ui/button";
-import { FileTextIcon, CarIcon } from "lucide-react";
+import { FileTextIcon, CarIcon, FileInput } from "lucide-react";
 
 
 export const Sidebar = ({ activeTab, setActiveTab }: SidebarProps): JSX.Element => {
@@ -20,9 +20,18 @@ export const Sidebar = ({ activeTab, setActiveTab }: SidebarProps): JSX.Element 
             variant={activeTab === 'cars' ? 'default' : 'ghost'}
             size="icon"
             onClick={() => setActiveTab('cars')}
+            className="mb-4"
           >
             <CarIcon className="h-6 w-6" />
             <span className="sr-only">Cars</span>
+          </Button>
+          <Button
+            variant={activeTab === 'transfer' ? 'default' : 'ghost'}
+            size="icon"
+            onClick={() => setActiveTab('transfer')}
+          >
+            <FileInput className="h-6 w-6" />
+            <span className="sr-only">Transfer Requests</span>
           </Button>
         </div>
       </div>
