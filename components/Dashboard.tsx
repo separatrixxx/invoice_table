@@ -947,10 +947,16 @@ export default function Dashboard() {
             <div className="overflow-y-auto flex-1">
               {
                 activeTab === 'invoices' ?
-                  <TableInvoices filteredInvoices={filteredInvoices} getStatusColor={getStatusColor} />
+                  <TableInvoices filteredInvoices={filteredInvoices} getStatusColor={getStatusColor}
+                    activePage={activePageInvoices} itemsPerPage={itemsPerPage} setInvoices={setInvoices}
+                    setTotalItems={setActivePageInvoices} />
                   : activeTab === 'cars' ?
-                    <TableCars filteredCarRequests={filteredCarRequests} getStatusColor={getStatusColor} />
-                    : <TableTransfer filteredTransferRequests={filteredTransferRequests} getStatusColor={getStatusColor} />
+                    <TableCars filteredCarRequests={filteredCarRequests} getStatusColor={getStatusColor}
+                      activePage={activePageInvoices} itemsPerPage={itemsPerPage} setCars={setCarRentRequests}
+                      setTotalItems={setActivePageInvoices} />
+                    : <TableTransfer filteredTransferRequests={filteredTransferRequests} getStatusColor={getStatusColor}
+                      activePage={activePageInvoices} itemsPerPage={itemsPerPage} setTransfer={setTransferRequests}
+                      setTotalItems={setActivePageInvoices} />
               }
             </div>
             <PageNavigation activeTab={activeTab} activePageInvoices={activePageInvoices} activePageCars={activePageCars}

@@ -10,6 +10,19 @@ export interface CarDetail {
     insurance: boolean,
     car_category: string,
     rental_days: number,
+    baby_seat_cost: number,
+    baby_seats: number,
+    babys_age: number | null,
+    base_rental_cost: number,
+    client_email: string,
+    client_name: string,
+    client_phone: string,
+    discount: number | null,
+    discount_amount: number,
+    driver_age: string,
+    insurance_cost: number,
+    service_fee: number,
+    total_cost: number,
 }
 
 export interface CarInterface {
